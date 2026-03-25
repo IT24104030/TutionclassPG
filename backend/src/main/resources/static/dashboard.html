@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - A/L Tuition Management</title>
+    <link rel="icon" href="data:,">
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="vendor/fontawesome/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo"><i class="fas fa-graduation-cap"></i></div>
+        <div class="sidebar-title">
+            A/L Tuition Manager
+            <span>Management System</span>
+        </div>
+    </div>
+
+    <div class="sidebar-nav">
+        <p class="nav-section-title">Main</p>
+        <div class="nav-item">
+            <a class="nav-link active" onclick="loadPage('dashboard')" id="nav-dashboard">
+                <span class="nav-icon"><i class="fas fa-home"></i></span> Dashboard
+            </a>
+        </div>
+
+        <p class="nav-section-title">Academic</p>
+        <div class="nav-item">
+            <a class="nav-link" onclick="loadPage('students')" id="nav-students">
+                <span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Students
+            </a>
+        </div>
+        <div class="nav-item">
+            <a class="nav-link" onclick="loadPage('batches')" id="nav-batches">
+                <span class="nav-icon"><i class="fas fa-layer-group"></i></span> Batches
+            </a>
+        </div>
+        <div class="nav-item">
+            <a class="nav-link" onclick="loadPage('attendance')" id="nav-attendance">
+                <span class="nav-icon"><i class="fas fa-clipboard-check"></i></span> Attendance
+            </a>
+        </div>
+        <div class="nav-item">
+            <a class="nav-link" onclick="loadPage('results')" id="nav-results">
+                <span class="nav-icon"><i class="fas fa-chart-line"></i></span> Results
+            </a>
+        </div>
+        <div class="nav-item">
+            <a class="nav-link" onclick="loadPage('schedule')" id="nav-schedule">
+                <span class="nav-icon"><i class="fas fa-calendar-alt"></i></span> Schedule
+            </a>
+        </div>
+
+        <p class="nav-section-title">Finance</p>
+        <div class="nav-item">
+            <a class="nav-link" onclick="loadPage('income')" id="nav-income">
+                <span class="nav-icon"><i class="fas fa-coins"></i></span> Income
+                <span class="badge-count" id="pendingBadge">0</span>
+            </a>
+        </div>
+
+        <p class="nav-section-title">Growth</p>
+        <div class="nav-item">
+            <a class="nav-link" onclick="loadPage('marketing')" id="nav-marketing">
+                <span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Marketing
+            </a>
+        </div>
+        <div class="nav-item">
+            <a class="nav-link" onclick="loadPage('resources')" id="nav-resources">
+                <span class="nav-icon"><i class="fas fa-book-open"></i></span> Resources
+            </a>
+        </div>
+
+        <p class="nav-section-title">HR</p>
+        <div class="nav-item">
+            <a class="nav-link" onclick="loadPage('staff')" id="nav-staff">
+                <span class="nav-icon"><i class="fas fa-users-cog"></i></span> Staff & HR
+            </a>
+        </div>
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <div class="user-details">
+                <div class="user-name" id="userFullName">Administrator</div>
+                <div class="user-role" id="userRole">ADMIN</div>
+            </div>
+            <button class="btn p-1" style="color:var(--text-muted); border:none; background:none;"
+                    onclick="logout()" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- ============ MAIN WRAPPER ============ -->
+<div class="main-wrapper">
+    <!-- Topbar -->
+    <div class="topbar">
+        <div>
+            <div class="topbar-title" id="topbarTitle">Dashboard</div>
+            <div class="topbar-breadcrumb" id="topbarBreadcrumb">Home / Dashboard</div>
+        </div>
+        <div class="topbar-actions">
+            <div class="date-badge" id="currentDate"></div>
+            <a class="topbar-btn" title="Refresh" onclick="refreshPage()">
+                <i class="fas fa-sync-alt"></i>
+            </a>
+            <a class="topbar-btn" onclick="logout()" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Page Content -->
+    <div class="page-content" id="pageContent">
+        <!-- Dynamic content loads here -->
+    </div>
+</div>
+
+<!-- ============ TOAST CONTAINER ============ -->
+<div class="toast-container-custom" id="toastContainer"></div>
+
+<!-- ============ LOADING OVERLAY ============ -->
+<div class="loading-overlay d-none" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- ============ MODALS (Dynamic) ============ -->
+<div class="modal fade" id="mainModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mainModalTitle">Modal</h5>
+                <button type="button" class="btn-close-custom ms-auto" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="mainModalBody"></div>
+            <div class="modal-footer" id="mainModalFooter">
+                <button class="btn btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary-custom" id="mainModalSave">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div style="font-size:3rem; color:var(--danger); margin-bottom:16px;">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+                <h6 class="text-white mb-2">Are you sure?</h6>
+                <p style="color:var(--text-muted); font-size:0.85rem;" id="deleteMessage">
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer justify-content-center gap-2">
+                <button class="btn btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-danger-custom px-4" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ CHATBOT WIDGET ============ -->
+<button class="chatbot-fab" id="chatbotFab" type="button" title="Chat">
+    <i class="fas fa-robot"></i>
+</button>
+
+<div class="chatbot-panel d-none" id="chatbotPanel" aria-hidden="true">
+    <div class="chatbot-header">
+        <div class="chatbot-title">
+            <i class="fas fa-robot me-2"></i>Assistant
+            <span class="chatbot-subtitle">Ask about Students, Batches, Payments…</span>
+        </div>
+        <button class="chatbot-close" id="chatbotClose" type="button" title="Close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="chatbot-messages" id="chatbotMessages"></div>
+    <div class="chatbot-input">
+        <input class="chatbot-text" id="chatbotText" type="text" placeholder="Type a message…" autocomplete="off" />
+        <button class="chatbot-send" id="chatbotSend" type="button" title="Send">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+
+<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="vendor/chartjs/chart.umd.min.js"></script>
+<script src="js/app.js?v=20260319"></script>
+<script src="js/students.js?v=20260319"></script>
+<script src="js/income.js?v=20260319"></script>
+<script src="js/schedule.js?v=20260319"></script>
+<script src="js/marketing.js?v=20260319"></script>
+<script src="js/resources.js?v=20260319"></script>
+<script src="js/staff.js?v=20260319"></script>
+<script src="js/chatbot.js?v=20260319"></script>
+</body>
+</html>
