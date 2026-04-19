@@ -79,6 +79,45 @@ public class ResourceController {
             if (!Files.exists(dirPath)) Files.createDirectories(dirPath);
 
             String originalName = file.getOriginalFilename();
+            String ext = "";
+            if (originalName != null && originalName.contains(".")) {
+                ext = originalName.substring(originalName.lastIndexOf('.')).toLowerCase();
+            }
+
+            // Only save when selected resource type matches uploaded file extension.
+            String normalizedTypeUpper = normalizedType.trim().toUpperCase();
+            switch (normalizedTypeUpper) {
+                case "PDF" -> {
+                    if (ext.isEmpty() || !ext.equals(".pdf")) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                "message",
+                                "Selected type is PDF, but uploaded file has extension '" + ext + "'(expected .pdf)"
+                        ));
+                    }
+                }
+                case "PPT" -> {
+                    boolean validPpt = ext.equals(".ppt") || ext.equals(".pptx");
+                    if (ext.isEmpty() || !validPpt) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                "message",
+                                "Selected type is PPT, but uploaded file has extension '" + ext + "' (expected .ppt or .pptx)"
+                        ));
+                    }
+                }
+                case "DOC" -> {
+                    boolean validDoc = ext.equals(".doc") || ext.equals(".docx");
+                    if (ext.isEmpty() ||!validDoc ) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                "message",
+                                "Selected type is DOC, but uploaded file has extension '" + ext + "' (expected .doc or .docx)"
+                        ));
+                    }
+                }
+                default -> {
+                    // For VIDEO, MODEL_PAPER, OTHER we don't enforce extension matching.
+                }
+            }
+
             String savedName    = UUID.randomUUID() + "_" + originalName;
             Path   filePath     = dirPath.resolve(savedName);
             Files.copy(file.getInputStream(), filePath);
@@ -86,7 +125,7 @@ public class ResourceController {
             Resource resource = new Resource();
             resource.setTitle(title);
             resource.setDescription(description);
-            resource.setResourceType(Resource.ResourceType.valueOf(normalizedType.trim().toUpperCase()));
+            resource.setResourceType(Resource.ResourceType.valueOf(normalizedTypeUpper));
             resource.setFileName(originalName);
             resource.setFilePath(filePath.toString());
             resource.setFileSize(file.getSize());
