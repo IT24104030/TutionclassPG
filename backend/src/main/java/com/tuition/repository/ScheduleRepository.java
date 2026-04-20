@@ -8,7 +8,6 @@ import java.util.List;
 
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
-
     List<Schedule> findByBatchId(Long batchId);
     List<Schedule> findByClassDate(LocalDate date);
     List<Schedule> findByClassDateBetween(LocalDate from, LocalDate to);
