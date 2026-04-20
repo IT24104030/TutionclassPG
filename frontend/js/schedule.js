@@ -2,6 +2,7 @@
    schedule.js - Schedule Management Module
    ============================================ */
 
+
 async function renderSchedule() {
     try {
         const [schedules, batches] = await Promise.all([api('/schedules'), api('/batches')]);
