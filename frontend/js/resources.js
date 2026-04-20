@@ -187,6 +187,26 @@ async function uploadResource() {
     if (!title) return toast('Enter title','warning');
     if (!fileInput.files[0]) return toast('Please choose a file to upload','warning');
 
+    // Front-end safety check: selected type must match uploaded file extension.
+    // This prevents saving e.g. a .ppt file while "PDF" is selected.
+    const file = fileInput.files[0];
+    const originalName = file?.name || '';
+    const ext = originalName.includes('.') ? originalName.substring(originalName.lastIndexOf('.')).toLowerCase() : '';
+    const allowedExtByType = {
+        PDF: ['.pdf'],
+        PPT: ['.ppt','pptx'],
+        DOC: ['.doc','docx'],
+    };
+    const allowedExt = allowedExtByType[fileType];
+    if (allowedExt) {
+        if (!ext || !allowedExt.includes(ext)) {
+            return toast(
+                `Selected type is ${fileType}, but uploaded file is "${originalName}" (expected ${allowedExt.join(', ')})`,
+                'warning'
+            );
+        }
+    }
+
     const formData = new FormData();
     formData.append('title',      title);
     formData.append('type',       fileType);
