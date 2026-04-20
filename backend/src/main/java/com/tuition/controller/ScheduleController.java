@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +15,7 @@ import java.util.Map;
 public class ScheduleController {
 
     @Autowired private ScheduleRepository scheduleRepo;
+    private static final LocalTime EARLIEST_ALLOWED_TIME = LocalTime.of(7, 0);
 
     @GetMapping
     public List<Schedule> getAll() { return scheduleRepo.findAll(); }
@@ -46,12 +48,21 @@ public class ScheduleController {
     }
 
     @PostMapping
-    public ResponseEntity<Schedule> create(@RequestBody Schedule schedule) {
+    public ResponseEntity<?> create(@RequestBody Schedule schedule) {
+        String validationError = validateScheduleTimeRules(schedule);
+        if (validationError != null) {
+            return ResponseEntity.badRequest().body(Map.of("message", validationError));
+        }
         return ResponseEntity.ok(scheduleRepo.save(schedule));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Schedule> update(@PathVariable Long id, @RequestBody Schedule updated) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Schedule updated) {
+        String validationError = validateScheduleTimeRules(updated);
+        if (validationError != null) {
+            return ResponseEntity.badRequest().body(Map.of("message", validationError));
+        }
+
         return scheduleRepo.findById(id).map(s -> {
             s.setTitle(updated.getTitle());
             s.setClassType(updated.getClassType());
@@ -78,5 +89,19 @@ public class ScheduleController {
     public ResponseEntity<?> delete(@PathVariable Long id) {
         scheduleRepo.deleteById(id);
         return ResponseEntity.ok(Map.of("message","Deleted"));
+    }
+
+    private String validateScheduleTimeRules(Schedule schedule) {
+        if (schedule.getStartTime() == null || schedule.getEndTime() == null) {
+            return "Start time and end time are required";
+        }
+        if (schedule.getStartTime().isBefore(EARLIEST_ALLOWED_TIME)
+                || schedule.getEndTime().isBefore(EARLIEST_ALLOWED_TIME)) {
+            return "Classes cannot be scheduled between 12:00 AM and 7:00 AM";
+        }
+        if (!schedule.getEndTime().isAfter(schedule.getStartTime())) {
+            return "End time must be after start time";
+        }
+        return null;
     }
 }
