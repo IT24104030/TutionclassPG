@@ -1,5 +1,7 @@
 package com.tuition.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,6 +12,7 @@ import java.time.LocalTime;
 
 @Entity
 @Table(name = "schedules")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,6 +24,7 @@ public class Schedule {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "batch_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "subject"})
     private Batch batch;
 
     @Column(nullable = false, length = 150)
@@ -28,7 +32,7 @@ public class Schedule {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "class_type")
-    private ClassType classType = ClassType.PHYSICAL;
+    private com.tuition.model.Schedule.ClassType classType = com.tuition.model.Schedule.ClassType.PHYSICAL;
 
     @Column(name = "class_date", nullable = false)
     private LocalDate classDate;
@@ -46,13 +50,14 @@ public class Schedule {
     private String onlineLink;
 
     @Enumerated(EnumType.STRING)
-    private Status status = Status.SCHEDULED;
+    private com.tuition.model.Schedule.Status status = com.tuition.model.Schedule.Status.SCHEDULED;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
+    @JsonIgnore
     private User createdBy;
 
     @Column(name = "created_at")
