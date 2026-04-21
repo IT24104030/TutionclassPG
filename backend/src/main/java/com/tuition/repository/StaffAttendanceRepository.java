@@ -8,6 +8,8 @@ import java.util.List;
 
 @Repository
 public interface StaffAttendanceRepository extends JpaRepository<StaffAttendance, Long> {
+    void deleteByStaff_Id(Long staffId);
+
     List<StaffAttendance> findByStaffId(Long staffId);
     List<StaffAttendance> findByDate(LocalDate date);
     List<StaffAttendance> findByStaffIdAndDateBetween(Long staffId, LocalDate from, LocalDate to);
