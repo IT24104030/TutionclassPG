@@ -186,9 +186,9 @@ public class StaffController {
     public ResponseEntity<?> delete(@PathVariable Long id) {
         return staffRepo.findById(id).map(s -> {
             Long pk = s.getId();
-            taskRepo.deleteByAssignedTo_Id(pk);
-            staffAttRepo.deleteByStaff_Id(pk);
-            payrollRepo.deleteByStaff_Id(pk);
+            taskRepo.deleteByAssignedToId(pk);
+            staffAttRepo.deleteByStaffId(pk);
+            payrollRepo.deleteByStaffId(pk);
             staffRepo.deleteById(pk);
             return ResponseEntity.ok(Map.of("message", "Deleted"));
         }).orElse(ResponseEntity.notFound().build());
@@ -394,7 +394,7 @@ public class StaffController {
                     .setScale(2, RoundingMode.HALF_UP);
 
             Payroll payroll = payrollRepo
-                    .findByStaff_IdAndPayMonthAndPayYear(req.staffId(), payMonth, year)
+                    .findByStaffIdAndPayMonthAndPayYear(req.staffId(), payMonth, year)
                     .orElseGet(Payroll::new);
 
             payroll.setStaff(staff);
