@@ -2,11 +2,13 @@ package com.tuition.controller;
 
 import com.tuition.model.Attendance;
 import com.tuition.model.Enrollment;
+import com.tuition.model.Payment;
 import com.tuition.model.Result;
 import com.tuition.model.Student;
 import com.tuition.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -18,13 +20,14 @@ import java.util.regex.Pattern;
 @RequestMapping("/students")
 public class StudentController {
 
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^[+]?[0-9]{9,15}$");
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9]{10,11}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
     @Autowired private StudentRepository    studentRepo;
     @Autowired private EnrollmentRepository enrollmentRepo;
     @Autowired private AttendanceRepository attendanceRepo;
     @Autowired private ResultRepository     resultRepo;
+    @Autowired private PaymentRepository    paymentRepo;
     @Autowired private BatchRepository      batchRepo;
 
     // ---- CRUD ----
@@ -74,12 +77,20 @@ public class StudentController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<?> delete(@PathVariable Long id) {
-        return studentRepo.findById(id).map(s -> {
-            s.setIsActive(false);
-            studentRepo.save(s);
-            return ResponseEntity.ok(Map.of("message", "Student deactivated"));
-        }).orElse(ResponseEntity.notFound().build());
+        if (!studentRepo.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Remove dependent records first so delete works even when DB FKs are restrictive.
+        attendanceRepo.deleteByStudentId(id);
+        resultRepo.deleteByStudentId(id);
+        enrollmentRepo.deleteByStudentId(id);
+        paymentRepo.deleteByStudentId(id);
+        studentRepo.deleteById(id);
+
+        return ResponseEntity.ok(Map.of("message", "Student deleted"));
     }
 
     // ---- ENROLLMENTS ----
@@ -144,9 +155,9 @@ public class StudentController {
             return "Full name must be at least 3 characters";
         }
 
-        String phone = normalize(student.getPhone());
+        String phone = normalizePhone(student.getPhone());
         if (phone == null || !PHONE_PATTERN.matcher(phone).matches()) {
-            return "Phone number must be 9 to 15 digits";
+            return "Phone number must be 10 or 11 digits";
         }
 
         if (creating && student.getGender() == null) {
@@ -163,9 +174,9 @@ public class StudentController {
             return "A/L year must be between 2000 and 2100";
         }
 
-        String parentPhone = normalize(student.getParentPhone());
+        String parentPhone = normalizePhone(student.getParentPhone());
         if (parentPhone != null && !PHONE_PATTERN.matcher(parentPhone).matches()) {
-            return "Parent phone number must be 9 to 15 digits";
+            return "Parent phone number must be 10 or 11 digits";
         }
 
         if (student.getDateOfBirth() != null && student.getDateOfBirth().isAfter(LocalDate.now())) {
@@ -188,6 +199,14 @@ public class StudentController {
         if (value == null) return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizePhone(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) return null;
+
+        // Keep numbers only for strict phone validation (10-11 digits).
+        return normalized.replaceAll("[^0-9]", "");
     }
 
     private String generateStudentId() {
