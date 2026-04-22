@@ -2,6 +2,220 @@
    staff.js - Human Resource & Staff Management
    ============================================ */
 
+function staffPhoneDigits(value) {
+    return String(value || '').replace(/\D/g, '');
+}
+
+function isValidStaffPhone10(value) {
+    return staffPhoneDigits(value).length === 10;
+}
+
+function isValidStaffOptionalEmail(email) {
+    const v = String(email || '').trim();
+    if (!v) return true;
+    if (v.length > 100) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
+/** @returns {string|null} error message or null if OK */
+function validateStaffForm({ fullName, phone, email, basicSalary, commissionRate, joinedDate, address }) {
+    const name = String(fullName || '').trim();
+    if (name.length < 2) return 'Full name must be at least 2 characters';
+    if (name.length > 100) return 'Full name must be at most 100 characters';
+    if (!/^[\p{L} ]+$/u.test(name)) return 'Full name cannot contain symbols. Use letters and spaces only.';
+
+    if (!isValidStaffPhone10(phone)) return 'Phone must be exactly 10 digits';
+
+    if (!isValidStaffOptionalEmail(email)) return 'Enter a valid email or leave it blank';
+
+    if (!Number.isFinite(basicSalary) || basicSalary < 0) return 'Basic salary must be zero or a positive number';
+    if (basicSalary > 99999999.99) return 'Basic salary is too large';
+
+    if (!Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100) {
+        return 'Commission rate must be between 0 and 100';
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    if (joinedDate && joinedDate > today) return 'Join date cannot be in the future';
+
+    const addr = String(address || '');
+    if (addr.length > 4000) return 'Address is too long (max 4000 characters)';
+
+    return null;
+}
+
+// Real-time validation functions
+function validateFullName(value) {
+    const name = String(value || '').trim();
+    if (name.length === 0) return null; // Don't show error for empty during typing
+    if (name.length < 2) return 'Full name must be at least 2 characters';
+    if (name.length > 100) return 'Full name must be at most 100 characters';
+    if (!/^[\p{L} ]+$/u.test(name)) return 'Full name cannot contain symbols. Use letters and spaces only.';
+    return null;
+}
+
+function validatePhone(value) {
+    const phone = staffPhoneDigits(value);
+    if (phone.length === 0) return null; // Don't show error for empty during typing
+    if (phone.length < 10) return `Phone must be exactly 10 digits (${phone.length}/10)`;
+    if (phone.length > 10) return 'Phone must be exactly 10 digits (too many digits)';
+    return null;
+}
+
+function validateEmail(value) {
+    const email = String(value || '').trim();
+    if (email.length === 0) return null; // Don't show error for empty during typing
+    if (email.length > 100) return 'Email must be at most 100 characters';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid email address';
+    return null;
+}
+
+function validateSalary(value) {
+    const salary = parseFloat(value);
+    if (value === '') return null; // Don't show error for empty during typing
+    if (!Number.isFinite(salary)) return 'Basic salary must be a valid number';
+    if (salary < 0) return 'Basic salary must be zero or a positive number';
+    if (salary > 99999999.99) return 'Basic salary is too large';
+    return null;
+}
+
+function validateCommission(value) {
+    const commission = parseFloat(value);
+    if (value === '') return null; // Don't show error for empty during typing
+    if (!Number.isFinite(commission)) return 'Commission rate must be a valid number';
+    if (commission < 0 || commission > 100) return 'Commission rate must be between 0 and 100';
+    return null;
+}
+
+function validateJoinDate(value) {
+    if (!value) return null; // Don't show error for empty during typing
+    const today = new Date().toISOString().split('T')[0];
+    if (value > today) return 'Join date cannot be in the future';
+    return null;
+}
+
+function validateAddress(value) {
+    const addr = String(value || '');
+    if (addr.length > 4000) return 'Address is too long (max 4000 characters)';
+    return null;
+}
+
+// Function to show validation error on input field
+function showFieldError(inputId, errorMessage) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    // Remove existing error
+    const existingError = input.parentNode.querySelector('.field-error');
+    if (existingError) existingError.remove();
+    
+    // Remove error styling
+    input.classList.remove('is-invalid');
+    
+    if (errorMessage) {
+        // Add error styling
+        input.classList.add('is-invalid');
+        
+        // Create error message element
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error text-danger small mt-1';
+        errorDiv.style.fontSize = '0.75rem';
+        errorDiv.textContent = errorMessage;
+        
+        // Insert error message after input
+        input.parentNode.insertBefore(errorDiv, input.nextSibling);
+    }
+}
+
+// Function to clear field error
+function clearFieldError(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    const existingError = input.parentNode.querySelector('.field-error');
+    if (existingError) existingError.remove();
+    
+    input.classList.remove('is-invalid');
+}
+
+// Setup real-time validation for staff forms
+function setupStaffFormValidation(prefix) {
+    // Full Name validation
+    const nameInput = document.getElementById(prefix + 'Name');
+    if (nameInput) {
+        nameInput.addEventListener('input', () => {
+            const error = validateFullName(nameInput.value);
+            showFieldError(prefix + 'Name', error);
+        });
+    }
+    
+    // Phone validation
+    const phoneInput = document.getElementById(prefix + 'Phone');
+    console.log('Phone input found:', phoneInput, 'with ID:', prefix + 'Phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', () => {
+            console.log('Phone input event triggered, value:', phoneInput.value);
+            const error = validatePhone(phoneInput.value);
+            console.log('Phone validation error:', error);
+            showFieldError(prefix + 'Phone', error);
+        });
+        // Also validate on paste for phone numbers
+        phoneInput.addEventListener('paste', (e) => {
+            setTimeout(() => {
+                const error = validatePhone(phoneInput.value);
+                showFieldError(prefix + 'Phone', error);
+            }, 10);
+        });
+    } else {
+        console.warn('Phone input not found with ID:', prefix + 'Phone');
+    }
+    
+    // Email validation
+    const emailInput = document.getElementById(prefix + 'Email');
+    if (emailInput) {
+        emailInput.addEventListener('input', () => {
+            const error = validateEmail(emailInput.value);
+            showFieldError(prefix + 'Email', error);
+        });
+    }
+    
+    // Salary validation
+    const salaryInput = document.getElementById(prefix + 'Salary');
+    if (salaryInput) {
+        salaryInput.addEventListener('input', () => {
+            const error = validateSalary(salaryInput.value);
+            showFieldError(prefix + 'Salary', error);
+        });
+    }
+    
+    // Commission validation
+    const commInput = document.getElementById(prefix + 'Comm');
+    if (commInput) {
+        commInput.addEventListener('input', () => {
+            const error = validateCommission(commInput.value);
+            showFieldError(prefix + 'Comm', error);
+        });
+    }
+    
+    // Join Date validation
+    const joinInput = document.getElementById(prefix + 'Join');
+    if (joinInput) {
+        joinInput.addEventListener('change', () => {
+            const error = validateJoinDate(joinInput.value);
+            showFieldError(prefix + 'Join', error);
+        });
+    }
+    
+    // Address validation
+    const addressInput = document.getElementById(prefix + 'Address');
+    if (addressInput) {
+        addressInput.addEventListener('input', () => {
+            const error = validateAddress(addressInput.value);
+            showFieldError(prefix + 'Address', error);
+        });
+    }
+}
+
 async function renderStaff() {
     try {
         const staff = await api('/staff');
@@ -10,6 +224,7 @@ async function renderStaff() {
         <div class="section-header">
             <h4><i class="fas fa-users-cog me-2 text-primary-custom"></i>Human Resource Management</h4>
             <button class="btn btn-primary-custom" onclick="showAddStaff()">
+
                 <i class="fas fa-plus me-2"></i>Add Staff
             </button>
         </div>
@@ -63,7 +278,7 @@ async function showHrTab(tab, el) {
     const area = document.getElementById('hrTabContent');
     if (tab === 'staffList')  area.innerHTML = renderStaffList(window._allStaff||[]);
     if (tab === 'attendance') await loadStaffAttendance(area);
-    if (tab === 'payroll')    await loadStaffPayroll(area);
+    if (tab === 'payroll')    await loadStaffPayroll(area, window._payrollView?.month, window._payrollView?.year);
     if (tab === 'tasks')      await loadStaffTasks(area);
     return false;
 }
@@ -149,7 +364,7 @@ async function loadStaffAttendance(area) {
                     <div class="card-body p-0">
                         ${records.length
                           ? `<div class="table-responsive"><table class="table"><thead><tr><th>Staff</th><th>Status</th><th>Time</th></tr></thead><tbody>
-                             ${records.map(r=>`<tr><td style="color:white">${r.staff?.fullName||'-'}</td><td>${statusBadge(r.status)}</td><td style="color:var(--text-muted)">${r.checkInTime||'-'}</td></tr>`).join('')}
+                             ${records.map(r=>`<tr><td style="color:white">${r.staffName||'-'}</td><td>${statusBadge(r.status)}</td><td style="color:var(--text-muted)">${r.checkIn||'-'}</td></tr>`).join('')}
                              </tbody></table></div>`
                           : `<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-calendar-day"></i></div><p class="empty-state-text">No attendance records for today</p></div>`}
                     </div>
@@ -178,7 +393,7 @@ async function submitStaffAtt() {
         document.querySelectorAll(`.satt-btn[data-sid="${s.id}"]`).forEach(b => {
             if (b.style.color !== 'var(--text-muted)' && b.style.color !== 'transparent' && b.style.color !== '') status = b.dataset.status;
         });
-        return { staff:{id:s.id}, date:today, status };
+        return { staffId:s.id, date:today, status };
     });
 
     if (!records.length) {
@@ -188,18 +403,31 @@ async function submitStaffAtt() {
     try {
         await api('/staff/attendance/bulk','POST',records);
         toast(`Attendance saved for ${records.length} staff!`);
+        // Refresh today's records to show updated attendance
+        const area = document.getElementById('hrTabContent');
+        if (area) {
+            await loadStaffAttendance(area);
+        }
     } catch(err) { showError(err.message); }
 }
 
-async function loadStaffPayroll(area) {
+async function loadStaffPayroll(area, monthOverride = null, yearOverride = null) {
     try {
-        const today  = new Date();
-        const month  = today.getMonth() + 1;
-        const year   = today.getFullYear();
-        const payrolls = await api(`/staff/payroll/month/${month}/year/${year}`).catch(()=>[]);
+        const today = new Date();
+        const month = monthOverride ?? (today.getMonth() + 1);
+        const year = yearOverride ?? today.getFullYear();
+        const viewDate = new Date(year, month - 1, 1);
+        window._payrollView = { month, year };
+        let staffList = window._allStaff || [];
+        try {
+            const fresh = await api('/staff');
+            if (Array.isArray(fresh)) staffList = fresh;
+        } catch (_) { /* use cached list */ }
+        window._allStaff = staffList;
+        const payrolls = await api(`/staff/payroll/month/${month}/year/${year}`).catch(() => []);
         area.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <h6 style="color:white;margin:0">Payroll – ${today.toLocaleString('default',{month:'long'})} ${year}</h6>
+            <h6 style="color:white;margin:0">Payroll – ${viewDate.toLocaleString('default',{month:'long'})} ${year}</h6>
             <button class="btn btn-primary-custom btn-sm" onclick="showGeneratePayroll(${month},${year})"><i class="fas fa-plus me-2"></i>Generate Payslip</button>
         </div>
         <div class="table-container">
@@ -216,12 +444,17 @@ async function loadStaffPayroll(area) {
                             <td style="color:#00b09b">+Rs.${numFmt(p.bonuses||0)}</td>
                             <td style="color:#ff4757">-Rs.${numFmt(p.deductions||0)}</td>
                             <td style="color:#00b09b;font-weight:700;font-size:1rem;">Rs.${numFmt(p.netSalary||0)}</td>
-                            <td>${statusBadge(p.isPaid?'PAID':'PENDING')}</td>
+                            <td>${statusBadge(p.status === 'PAID' ? 'PAID' : 'PENDING')}</td>
                             <td>
-                                ${!p.isPaid
-                                  ? `<button class="btn btn-sm" onclick="markPayrollPaid(${p.id})"
+                                <div class="d-flex flex-wrap gap-1">
+                                  <button type="button" class="btn btn-sm" onclick="downloadPayrollSlip(${p.id})"
+                                    style="background:rgba(102,126,234,0.15);color:#a8b3ff;border:1px solid rgba(102,126,234,0.35);font-size:0.72rem;padding:4px 10px;border-radius:6px;">
+                                    <i class="fas fa-download me-1"></i>Download</button>
+                                  ${p.status !== 'PAID'
+                                  ? `<button type="button" class="btn btn-sm" onclick="markPayrollPaid(${p.id})"
                                         style="background:rgba(0,176,155,0.1);color:#00b09b;border:1px solid rgba(0,176,155,0.2);font-size:0.72rem;padding:4px 10px;border-radius:6px;">Mark Paid</button>`
                                   : '<span style="color:#00b09b;font-size:0.8rem;"><i class="fas fa-check me-1"></i>Paid</span>'}
+                                </div>
                             </td>
                           </tr>`).join('')
                           : `<tr><td colspan="8" class="text-center py-5" style="color:var(--text-muted)">No payroll records for this month</td></tr>`}
@@ -232,8 +465,22 @@ async function loadStaffPayroll(area) {
     } catch(err) { showError(err.message); }
 }
 
-function showGeneratePayroll(month, year) {
-    const staff = window._allStaff || [];
+async function showGeneratePayroll(month, year) {
+    let staff = window._allStaff || [];
+    try {
+        staff = await api('/staff');
+        window._allStaff = Array.isArray(staff) ? staff : [];
+        staff = window._allStaff;
+    } catch (e) {
+        if (!staff.length) {
+            showError(e.message || 'Could not load staff list');
+            return;
+        }
+    }
+    if (!staff.length) {
+        toast('Add at least one staff member on the Staff tab first, then try again.', 'warning');
+        return;
+    }
     const form = `
     <div class="row g-3">
         <div class="col-md-6"><label class="form-label">Staff *</label>
@@ -248,19 +495,39 @@ function showGeneratePayroll(month, year) {
         <div class="col-md-6"><label class="form-label">Deductions (Rs.)</label><input class="form-control" id="prDeductions" type="number" step="0.01" value="0"></div>
         <div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" id="prNotes" rows="2"></textarea></div>
     </div>`;
-    openModal('<i class="fas fa-file-invoice-dollar me-2"></i>Generate Payslip', form, async()=>{
+    openModal('<i class="fas fa-file-invoice-dollar me-2"></i>Generate Payslip', form, async () => {
+        const staffId = parseInt(document.getElementById('prStaff').value, 10);
+        const month = parseInt(document.getElementById('prMonth').value, 10);
+        const year = parseInt(document.getElementById('prYear').value, 10);
+        if (!Number.isFinite(staffId) || staffId <= 0) {
+            toast('Please choose a staff member from the list.', 'warning');
+            return;
+        }
+        if (!Number.isFinite(month) || month < 1 || month > 12) {
+            toast('Month must be between 1 and 12.', 'warning');
+            return;
+        }
+        if (!Number.isFinite(year) || year < 2000 || year > 2100) {
+            toast('Enter a valid year.', 'warning');
+            return;
+        }
         const payload = {
-            staff: { id: parseInt(document.getElementById('prStaff').value) },
-            month: parseInt(document.getElementById('prMonth').value),
-            year:  parseInt(document.getElementById('prYear').value),
-            commission:  parseFloat(document.getElementById('prCommission').value)||0,
-            bonuses:     parseFloat(document.getElementById('prBonuses').value)||0,
-            deductions:  parseFloat(document.getElementById('prDeductions').value)||0,
+            staffId,
+            month,
+            year,
+            commission:  parseFloat(document.getElementById('prCommission').value) || 0,
+            bonuses:     parseFloat(document.getElementById('prBonuses').value) || 0,
+            deductions:  parseFloat(document.getElementById('prDeductions').value) || 0,
             notes:       document.getElementById('prNotes').value,
         };
-        if (!payload.staff.id) return toast('Select staff','warning');
-        try { await api('/staff/payroll','POST',payload); closeModal(); toast('Payslip generated!'); loadStaffPayroll(document.getElementById('hrTabContent')); }
-        catch(err) { showError(err.message); }
+        try {
+            await api('/staff/payroll', 'POST', payload);
+            closeModal();
+            toast('Payslip saved!');
+            await loadStaffPayroll(document.getElementById('hrTabContent'), month, year);
+        } catch (err) {
+            showError(err.message);
+        }
     });
 }
 
@@ -270,6 +537,14 @@ async function markPayrollPaid(id) {
         toast('Marked as paid!');
         loadStaffPayroll(document.getElementById('hrTabContent'));
     } catch(err) { showError(err.message); }
+}
+
+async function downloadPayrollSlip(payrollId) {
+    try {
+        await apiDownloadGet(`/staff/payroll/${payrollId}/payslip`, `payslip-${payrollId}.html`);
+    } catch (err) {
+        showError(err.message);
+    }
 }
 
 async function loadStaffTasks(area) {
@@ -408,31 +683,42 @@ async function showAddStaff() {
         <div class="col-md-6"><label class="form-label">Full Name *</label><input class="form-control" id="sfName"></div>
         <div class="col-md-6"><label class="form-label">Role *</label>
             <select class="form-select" id="sfRole"><option>ASSISTANT</option><option>ADMIN</option><option>COORDINATOR</option><option>TEACHER</option></select></div>
-        <div class="col-md-6"><label class="form-label">Phone *</label><input class="form-control" id="sfPhone"></div>
+        <div class="col-md-6"><label class="form-label">Phone * <small class="text-muted">(10 digits)</small></label>
+            <input class="form-control" id="sfPhone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="20" placeholder="e.g. 0771234567"></div>
         <div class="col-md-6"><label class="form-label">Email</label><input class="form-control" id="sfEmail" type="email"></div>
-        <div class="col-md-6"><label class="form-label">Basic Salary (Rs.)</label><input class="form-control" id="sfSalary" type="number" step="0.01"></div>
-        <div class="col-md-6"><label class="form-label">Commission Rate (%)</label><input class="form-control" id="sfComm" type="number" step="0.01" value="0"></div>
+        <div class="col-md-6"><label class="form-label">Basic Salary (Rs.)</label>
+            <input class="form-control" id="sfSalary" type="number" step="0.01" min="0" placeholder="0"></div>
+        <div class="col-md-6"><label class="form-label">Commission Rate (%)</label>
+            <input class="form-control" id="sfComm" type="number" step="0.01" min="0" max="100" value="0"></div>
         <div class="col-md-6"><label class="form-label">Join Date</label><input class="form-control" id="sfJoin" type="date" max="${new Date().toISOString().split('T')[0]}"></div>
-        <div class="col-12"><label class="form-label">Address</label><textarea class="form-control" id="sfAddress" rows="2"></textarea></div>
+        <div class="col-12"><label class="form-label">Address <small class="text-muted">(optional, max 4000)</small></label><textarea class="form-control" id="sfAddress" rows="2" maxlength="4000"></textarea></div>
     </div>`;
     openModal('<i class="fas fa-user-plus me-2"></i>Add Staff Member', form, async()=>{
+        const salaryRaw = document.getElementById('sfSalary').value.trim();
+        const commRaw   = document.getElementById('sfComm').value.trim();
+        const basicSalary    = salaryRaw === '' ? 0 : parseFloat(salaryRaw);
+        const commissionRate = commRaw === '' ? 0 : parseFloat(commRaw);
+
         const payload = {
-            fullName:       document.getElementById('sfName').value.trim(),
+            fullName:       document.getElementById('sfName').value,
             role:           document.getElementById('sfRole').value,
-            phone:          document.getElementById('sfPhone').value.trim(),
-            email:          document.getElementById('sfEmail').value.trim(),
-            basicSalary:    parseFloat(document.getElementById('sfSalary').value)||0,
-            commissionRate: parseFloat(document.getElementById('sfComm').value)||0,
-            joinedDate:     document.getElementById('sfJoin').value||null,
+            phone:          staffPhoneDigits(document.getElementById('sfPhone').value),
+            email:          document.getElementById('sfEmail').value,
+            basicSalary,
+            commissionRate,
+            joinedDate:     document.getElementById('sfJoin').value || null,
             address:        document.getElementById('sfAddress').value,
         };
-        if (!payload.fullName||!payload.phone) return toast('Fill required fields','warning');
-        if (payload.joinedDate && payload.joinedDate > new Date().toISOString().split('T')[0]) {
-            return toast('Join date cannot be in the future', 'warning');
-        }
+        const err = validateStaffForm(payload);
+        if (err) return toast(err, 'warning');
+        payload.fullName = payload.fullName.trim();
+        payload.email = payload.email.trim();
         try { await api('/staff','POST',payload); closeModal(); toast('Staff member added!'); renderStaff(); }
         catch(err) { showError(err.message); }
     });
+    
+    // Setup real-time validation after modal is shown
+    setTimeout(() => setupStaffFormValidation('sf'), 100);
 }
 
 async function editStaff(id) {
@@ -440,38 +726,50 @@ async function editStaff(id) {
     const form = `
     <div class="row g-3">
         <input type="hidden" id="esId" value="${id}">
-        <div class="col-md-6"><label class="form-label">Full Name</label><input class="form-control" id="esfName" value="${s.fullName}"></div>
-        <div class="col-md-6"><label class="form-label">Phone</label><input class="form-control" id="esfPhone" value="${s.phone||''}"></div>
-        <div class="col-md-6"><label class="form-label">Email</label><input class="form-control" id="esfEmail" value="${s.email||''}"></div>
+        <div class="col-md-6"><label class="form-label">Full Name *</label><input class="form-control" id="esfName" value="${s.fullName}"></div>
+        <div class="col-md-6"><label class="form-label">Phone <small class="text-muted">(10 digits)</small></label>
+            <input class="form-control" id="esfPhone" type="tel" inputmode="numeric" maxlength="20" value="${s.phone||''}" placeholder="10 digits"></div>
+        <div class="col-md-6"><label class="form-label">Email</label><input class="form-control" id="esfEmail" type="email" value="${s.email||''}"></div>
         <div class="col-md-6"><label class="form-label">Role</label>
             <select class="form-select" id="esfRole">
                 ${['ASSISTANT','ADMIN','COORDINATOR','TEACHER'].map(r=>`<option ${s.role===r?'selected':''}>${r}</option>`).join('')}
             </select></div>
-        <div class="col-md-6"><label class="form-label">Basic Salary</label><input class="form-control" id="esfSalary" type="number" value="${s.basicSalary||0}"></div>
-        <div class="col-md-6"><label class="form-label">Commission Rate (%)</label><input class="form-control" id="esfComm" type="number" value="${s.commissionRate||0}"></div>
+        <div class="col-md-6"><label class="form-label">Basic Salary</label>
+            <input class="form-control" id="esfSalary" type="number" step="0.01" min="0" value="${s.basicSalary||0}"></div>
+        <div class="col-md-6"><label class="form-label">Commission Rate (%)</label>
+            <input class="form-control" id="esfComm" type="number" step="0.01" min="0" max="100" value="${s.commissionRate||0}"></div>
         <div class="col-md-6"><label class="form-label">Join Date</label><input class="form-control" id="esfJoin" type="date" value="${s.joinedDate||''}" max="${new Date().toISOString().split('T')[0]}"></div>
     </div>`;
     openModal('<i class="fas fa-edit me-2"></i>Edit Staff', form, async()=>{
+        const salaryRaw = document.getElementById('esfSalary').value.trim();
+        const commRaw   = document.getElementById('esfComm').value.trim();
+        const basicSalary    = salaryRaw === '' ? 0 : parseFloat(salaryRaw);
+        const commissionRate = commRaw === '' ? 0 : parseFloat(commRaw);
+
         const payload = {
             fullName:       document.getElementById('esfName').value,
-            phone:          document.getElementById('esfPhone').value,
+            phone:          staffPhoneDigits(document.getElementById('esfPhone').value),
             email:          document.getElementById('esfEmail').value,
             role:           document.getElementById('esfRole').value,
-            basicSalary:    parseFloat(document.getElementById('esfSalary').value)||0,
-            commissionRate: parseFloat(document.getElementById('esfComm').value)||0,
-            joinedDate:     document.getElementById('esfJoin').value||null,
+            basicSalary,
+            commissionRate,
+            joinedDate:     document.getElementById('esfJoin').value || null,
         };
-        if (payload.joinedDate && payload.joinedDate > new Date().toISOString().split('T')[0]) {
-            return toast('Join date cannot be in the future', 'warning');
-        }
+        const err = validateStaffForm({ ...payload, address: '' });
+        if (err) return toast(err, 'warning');
+        payload.fullName = payload.fullName.trim();
+        payload.email = payload.email.trim();
         try { await api(`/staff/${id}`,'PUT',payload); closeModal(); toast('Staff updated!'); renderStaff(); }
         catch(err) { showError(err.message); }
     });
+    
+    // Setup real-time validation after modal is shown
+    setTimeout(() => setupStaffFormValidation('esf'), 100);
 }
 
 function deleteStaff(id, name) {
     confirmDelete(`Remove staff member "${name}"?`, async()=>{
-        try { await api(`/staff/${id}`,'DELETE'); toast('Staff member removed!'); renderStaff(); }
+        try { await api(`/staff/${id}`,'DELETE'); toast('Staff member deleted.'); renderStaff(); }
         catch(err) { showError(err.message); }
     });
 }
