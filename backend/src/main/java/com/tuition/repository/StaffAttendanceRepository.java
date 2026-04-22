@@ -13,4 +13,6 @@ public interface StaffAttendanceRepository extends JpaRepository<StaffAttendance
     List<StaffAttendance> findByStaffId(Long staffId);
     List<StaffAttendance> findByDate(LocalDate date);
     List<StaffAttendance> findByStaffIdAndDateBetween(Long staffId, LocalDate from, LocalDate to);
+
+    void deleteByStaffId(Long staffId);
 }

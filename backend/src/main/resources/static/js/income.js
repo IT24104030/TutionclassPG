@@ -53,7 +53,10 @@ async function renderIncome() {
         <div class="row g-4 mb-4">
             <div class="col-lg-8">
                 <div class="card">
-                    <div class="card-header"><h6 class="card-title">Monthly Income Overview</h6></div>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title">Monthly Income Overview</h6>
+                        <select id="incomeYear" class="form-select form-select-sm" style="width:auto;" onchange="renderIncome()"></select>
+                    </div>
                     <div class="card-body"><canvas id="incomeDetailChart" height="120"></canvas></div>
                 </div>
             </div>
@@ -89,6 +92,13 @@ async function renderIncome() {
         window._allPayments = payments;
         window._payStudents = students;
         window._payBatches  = batches;
+
+        const currentYear = new Date().getFullYear();
+        const yearOptions = [];
+        for (let y = currentYear - 5; y <= currentYear + 1; y++) {
+            yearOptions.push(`<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`);
+        }
+        document.getElementById('incomeYear').innerHTML = yearOptions.join('');
 
         setTimeout(() => {
             buildIncomeDetailChart(payments);
@@ -224,7 +234,8 @@ function buildIncomeDetailChart(payments) {
     if (!ctx) return;
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const data = new Array(12).fill(0);
-    payments.filter(p => p.status==='PAID').forEach(p => {
+    const selectedYear = parseInt(document.getElementById('incomeYear').value) || new Date().getFullYear();
+    payments.filter(p => p.status==='PAID' && p.paymentYear === selectedYear).forEach(p => {
         const monthIdx = months.indexOf((p.paymentMonth||'').substring(0,3));
         if (monthIdx >= 0) data[monthIdx] += p.amount;
     });
