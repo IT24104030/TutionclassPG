@@ -6,6 +6,7 @@ import com.tuition.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,13 +30,13 @@ public class MarketingController {
     }
 
     @PostMapping("/campaigns")
-    public ResponseEntity<Campaign> createCampaign(@RequestBody Campaign campaign) {
+    public ResponseEntity<Campaign> createCampaign(@Valid @RequestBody Campaign campaign) {
         return ResponseEntity.ok(campaignRepo.save(campaign));
     }
 
     @PutMapping("/campaigns/{id}")
     public ResponseEntity<Campaign> updateCampaign(@PathVariable Long id,
-                                                   @RequestBody Campaign updated) {
+                                                   @Valid @RequestBody Campaign updated) {
         return campaignRepo.findById(id).map(c -> {
             c.setCampaignName(updated.getCampaignName());
             c.setPlatform(updated.getPlatform());
