@@ -1,6 +1,7 @@
 package com.tuition.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -20,16 +21,21 @@ public class Campaign {
     private Long id;
 
     @Column(name = "campaign_name", nullable = false, length = 150)
+    @NotBlank(message = "Campaign name is required")
     private String campaignName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @NotNull(message = "Platform is required")
     private Platform platform;
 
-    @Column(name = "start_date")
+    @Column(name = "start_date", nullable = false)
+    @NotNull(message = "Start date is required")
+    @FutureOrPresent(message = "Start date must be today or in the future")
     private LocalDate startDate;
 
-    @Column(name = "end_date")
+    @Column(name = "end_date", nullable = false)
+    @NotNull(message = "End date is required")
     private LocalDate endDate;
 
     @Column(precision = 10, scale = 2)
@@ -47,6 +53,11 @@ public class Campaign {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @AssertTrue(message = "End date must be after start date")
+    private boolean isEndDateAfterStartDate() {
+        return endDate == null || startDate == null || endDate.isAfter(startDate);
+    }
 
     public enum Platform {
         FACEBOOK, INSTAGRAM, YOUTUBE, TIKTOK, WHATSAPP, REFERRAL, POSTER, OTHER
